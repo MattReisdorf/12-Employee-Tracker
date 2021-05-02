@@ -1,4 +1,5 @@
 // Dependencies
+const password = require('./dbpassword.json');
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 
@@ -22,7 +23,7 @@ const connection = mysql.createConnection({
     user: 'root',
 
     // Password
-    password: 'img0462jpg',
+    password: password.password,
     
     // Database
     database: 'All_Employees_DB'
