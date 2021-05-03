@@ -3,7 +3,6 @@ const password = require('./dbpassword.json');
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const table = require('console.table');
-const { first } = require('lodash');
 
 
 const initalPrompt = {
@@ -23,16 +22,6 @@ const initalPrompt = {
             `Update an Employee's Manager`,
             'Exit']
 };
-
-
-// const bsPrompt = {
-//     type: 'list',
-//     name: 'bsPrompt',
-//     message: 'waht now?',
-//     choices: ['exit','go back to beginning']
-// }
-
-
 
 
 // DB Connection
@@ -55,7 +44,7 @@ const connection = mysql.createConnection({
 // Connect to the DB
 connection.connect((err) => {
     err ? console.error(err) : console.log('Connected to Database');
-    firstPrompt();  
+    init();  
 });
 
 
@@ -64,7 +53,7 @@ const endConnection = () => {
     connection.end();
 };
 
-const firstPrompt = () => {
+const init = () => {
     inquirer
         .prompt(initalPrompt)
         .then((initalPrompt) => {
@@ -76,12 +65,10 @@ const firstPrompt = () => {
 const switchCases = (responses) => {
     switch(responses) {
         case 'View All Employees':
-            // console.log('View All Employees');
             viewAllEmployees();
             break;
         case 'View Employees By Department':
-            console.log('View Employees By Department');
-            // viewByDepartment();
+            viewByDepartment();
             break;
         case 'View Employees By Manager':
             console.log('View Employees By Manager');
@@ -112,22 +99,32 @@ const switchCases = (responses) => {
             console.log(`Update an Employee's Manager`);
             break;
         case `Exit`:
-            // console.log(`Exit`);
             endConnection();
             break;
     };
 };
 
 const viewAllEmployees = () => {
+    // This probably needs a join, currently doesn't give all of the desired information
     connection.query(
         `SELECT * FROM Employees`,
         (err, res) => {
             err ? console.error(err) : console.table(res);
-            firstPrompt();
+            init();
         }
-    )
-}
+    );
+};
 
+const viewByDepartment = () => {
+    // Also needs a join, just testing function calls and DB queries for now
+    connection.query(
+        `SELECT * FROM Departments`,
+        (err, res) => {
+            err ? console.error(err) : console.table(res);
+            init();
+        }
+    );
+};
 
 
 
