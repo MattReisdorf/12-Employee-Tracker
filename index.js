@@ -10,6 +10,12 @@ let existingRoles = new Array;
 
 let existingManagers = new Array;
 
+let existingEmployees = new Array;
+
+
+
+
+
 
 
 
@@ -67,6 +73,12 @@ const existingRolePrompt = {
     choices: existingRoles
 }
 
+const removedEmployeePrompt = {
+    type: 'list',
+    name: 'removedEmployee',
+    message: 'Select the Employee to Remove',
+    choices: existingEmployees
+}
 
 
 
@@ -134,7 +146,7 @@ const switchCases = (responses) => {
             addEmployeeName();
             break;
         case 'Remove an Employee':
-            console.log('Remove an Employee');
+            removeEmployee();
             break;
         case 'Add a Role':
             console.log('Add a Role');
@@ -245,7 +257,6 @@ const existingOrNewRole = (firstName, lastName) => {
     )
 }
 
-
 const newRole = (firstName, lastName) => {
     inquirer
         .prompt(newRolePrompt)
@@ -268,4 +279,36 @@ const addEmployeeManager = (firstName, lastName, role) => {
     console.log('function call worked');
     console.log(firstName, lastName, role);
     init();
+}
+
+const removeEmployee = () => {
+    connection.query(
+        `SELECT First_Name, Last_Name FROM Employees`,
+        (err,res) => {
+            if (err) {
+                console.error(err);
+            };
+            for (let i = 0; i < res.length; i++) {
+                if (existingEmployees.includes(`${res[i].First_Name} ${res[i].Last_Name}`)) {
+                    continue;
+                }
+                else {
+                    existingEmployees.push(`${res[i].First_Name} ${res[i].Last_Name}`);
+                }
+            }
+            selectRemovedEmployee();
+            // console.log(existingEmployees);
+            // init();
+        }
+    )
+}
+
+const selectRemovedEmployee = () => {
+    inquirer
+        .prompt(removedEmployeePrompt)
+        .then((removedEmployeePrompt) => {
+            console.log(removedEmployeePrompt.removedEmployee);
+            init();
+        }
+    )
 }
