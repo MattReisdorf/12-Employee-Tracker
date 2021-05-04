@@ -1,8 +1,15 @@
 // Dependencies
-const password = require('./dbpassword.json');
+const password = require('./dbpassword.json'); //Importing DB Connection Info from Ignored File
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const table = require('console.table');
+
+
+                    /*
+
+BREAK BETWEEN SECTIONS
+
+                    */  
 
 
 // Other Stuff
@@ -12,13 +19,14 @@ let existingManagers = new Array;
 
 let existingEmployees = new Array;
 
+let existingDepartments = new Array;
 
 
+                    /*
 
+BREAK BETWEEN SECTIONS
 
-
-
-
+                    */      
 
 
 // Inquirer Prompts
@@ -53,18 +61,23 @@ const addEmployeeNamePrompts = [
     }
 ];
 
-const existingOrNewRolePrompt = {
-    type: 'list',
-    name: 'existingOrNew',
-    message: 'Is This an Existing or New Role?',
-    choices: ['Existing', 'New']
-}
-
-const newRolePrompt = {
-    type: 'input',
-    name: 'newRole',
-    message: `What Is This Employee's Role?`
-}
+const newRolePrompt = [
+    {
+        type: 'input',
+        name: 'newRole',
+        message: `What is the New Role?`
+    },
+    {
+        type: 'number',
+        name: 'salary',
+        message: `What is the Salary?`
+    },
+    {
+        type: 'Input',
+        name: 'departmentID',
+        message: 'What is the Department?'
+    }
+]
 
 const existingRolePrompt = {
     type: 'list',
@@ -80,9 +93,54 @@ const removedEmployeePrompt = {
     choices: existingEmployees
 }
 
+const addDepartmentPrompt = {
+    type: 'input',
+    name: 'addDepartment',
+    message: 'What is the Name of the New Department?'
+}
+
+const removeRolePrompt = {
+    type: 'list',
+    name: 'removedRole',
+    message: 'Which Role Do You Want to Remove?',
+    choices: existingRoles
+}
+
+const removeDepartmentPrompt = {
+    type: 'list', 
+    name: 'removedDepartment',
+    message: 'Which Department do you Want to Remove?',
+    choices: existingDepartments
+}
+
+const updatePrompt = [
+    {
+        type: 'list',
+        name: 'employee',
+        message: `Which Employee do you Want to Update?`,
+        choices: existingEmployees
+    },
+    {
+        type: 'list',
+        name: 'update',
+        message: `What is the Employee's New Role?`,
+        choices: existingRoles
+    }
+]
+
+const selectManagerPrompt = {
+    type: 'list',
+    name: 'selectedManager',
+    message: `Who is this Employee's Manager?`,
+    choices: existingManagers
+}
 
 
+                    /*
 
+BREAK BETWEEN SECTIONS
+
+                    */
 
 
 // DB Connection
@@ -92,14 +150,14 @@ const connection = mysql.createConnection({
     // Local Host Port
     port: 3306,
 
-    // Username
-    user: 'root',
+    // Username: Username is Hidden in Ignored JSON
+    user: password.user,
 
     // Password: Password is Hidden in Ignored JSON
     password: password.password,
     
-    // Database
-    database: 'All_Employees_DB'
+    // Database: Database Name is Hidden in Ignored JSON
+    database: password.database
 });
 
 // Connect to the DB
@@ -109,12 +167,11 @@ connection.connect((err) => {
 });
 
 
+                    /*
 
+BREAK BETWEEN SECTIONS
 
-
-
-
-
+                    */
 
 
 // Functions
@@ -127,7 +184,6 @@ const init = () => {
         .prompt(initalPrompt)
         .then((initalPrompt) => {
             switchCases(initalPrompt.firstResponse);
-            // endConnection(); // end connection, remove before deploying
         })
 }
 
@@ -149,19 +205,19 @@ const switchCases = (responses) => {
             removeEmployee();
             break;
         case 'Add a Role':
-            console.log('Add a Role');
+            addRole();
             break;
         case 'Remove a Role':
-            console.log('Remove a Role');
+            removeRole();
             break;
         case 'Add a Department':
-            console.log('Add a Department');
+            addDepartment();
             break;
         case 'Remove a Department':
-            console.log('Remove a Department');
+            removeDepartment();
             break;
         case `Update an Employee's Role`:
-            console.log(`Update an Employee's Role`);
+            updateEmployee();
             break;
         case `Update an Emplyoee's Manager`:
             console.log(`Update an Employee's Manager`);
@@ -178,7 +234,7 @@ const viewAllEmployees = () => {
         `SELECT * FROM Employees`,
         (err, res) => {
             err ? console.error(err) : console.table(res);
-            init();
+        return init();
         }
     );
 };
@@ -189,7 +245,7 @@ const viewByDepartment = () => {
         `SELECT * FROM Departments`,
         (err, res) => {
             err ? console.error(err) : console.table(res);
-            init();
+        return init();
         }
     );
 };
@@ -203,7 +259,7 @@ const viewByManager = () => {
         },
         (err,res) => {
             err ? console.error(err) : console.table(res);
-            init();
+        return init();
         }
     )
 }
@@ -212,7 +268,6 @@ const addEmployeeName = () => {
     inquirer
         .prompt(addEmployeeNamePrompts)
         .then((addEmployeeNamePrompts) => {
-            // console.log(addEmployeeNamePrompts.firstName, addEmployeeNamePrompts.lastName);
             addEmployeeRole(addEmployeeNamePrompts.firstName, addEmployeeNamePrompts.lastName);
         }
     )
@@ -235,50 +290,94 @@ const addEmployeeRole = (firstName, lastName) => {
                     existingRoles.push(res[i].Title);
                 }
             }
-            existingOrNewRole(firstName, lastName);
+            existingRole(firstName, lastName);
         }
     )
-}
-
-const existingOrNewRole = (firstName, lastName) => {
-    inquirer
-        .prompt(existingOrNewRolePrompt)
-        .then((existingOrNewRolePrompt) => {
-            if (existingOrNewRolePrompt.existingOrNew == 'Existing') {
-                existingRole(firstName, lastName);
-            }
-            else if (existingOrNewRolePrompt.existingOrNew == 'New') {
-                // console.log('New Role');
-                newRole(firstName, lastName);
-            }
-            // console.log(firstName, lastName); // Check to make sure previous prompt data is still coming through new functions
-            
-        }
-    )
-}
-
-const newRole = (firstName, lastName) => {
-    inquirer
-        .prompt(newRolePrompt)
-        .then((newRolePrompt) => {
-            // console.log(firstName, lastName, newRolePrompt.newRole);
-            addEmployeeManager(firstName, lastName, newRolePrompt.newRole);
-        })
 }
 
 const existingRole = (firstName, lastName) => {
     inquirer
         .prompt(existingRolePrompt)
         .then((existingRolePrompt) => {
-            // console.log(firstName, lastName, existingRolePrompt.existingRole);
-            addEmployeeManager(firstName, lastName, existingRolePrompt.existingRole);
+            confirmDepartment(firstName, lastName, existingRolePrompt.existingRole);
         })
 }
 
-const addEmployeeManager = (firstName, lastName, role) => {
-    console.log('function call worked');
-    console.log(firstName, lastName, role);
-    init();
+const confirmDepartment = (firstName, lastName, selectedRole) => {
+    connection.query(
+        `SELECT Department_ID FROM Roles WHERE Title = '${selectedRole}'`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            };
+            let currentDepartment = res[0].Department_ID;
+            addEmployeeManager(firstName, lastName, selectedRole, currentDepartment);
+        }
+    )
+}
+
+const addEmployeeManager = (firstName, lastName, selectedRole, currentDepartment) => {
+    connection.query(
+        `SELECT First_Name, Last_Name FROM Managers WHERE Department_ID = ${currentDepartment}`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            };
+            for (let i = 0; i < res.length; i++) {
+                if (existingManagers.includes(res[i].First_Name && res[i].Last_Name)) {
+                    continue;
+                }
+                else {
+                    existingManagers.push(`${First_Name} ${Last_Name}`)
+                    inquirer
+                        .prompt(selectManagerPrompt)
+                        .then((selectManagerPrompt) => {
+                            determineRoleID(firstName, lastName, selectedRole, selectManagerPrompt.selectedManager);
+                        }
+                    )
+                }
+            }
+        }
+    )
+}
+
+const determineRoleID = (firstName, lastName, selectedRole, selectedManager) => {
+    connection.query(
+        `SELECT Role_ID FROM Roles WHERE Title = '${selectedRole}'`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            }
+            let currentRoleID = res[0].Role_ID;
+            determineManagerID(firstName, lastName, currentRoleID, selectedManager);
+        }
+    )
+}
+
+const determineManagerID = (firstName, lastName, currentRoleID, selectedManager) => {
+    const currentManager = selectedManager.split(' ');
+    connection.query(
+        `SELECT Manager_ID FROM Managers WHERE First_Name = '${currentManager[0]}' AND Last_Name = '${currentManager[1]}'`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            };
+            let currentManagerID = res[0].Manager_ID;
+            completeEmployeeAdd(firstName, lastName, currentRoleID, currentManagerID);
+        }
+    )
+}
+
+const completeEmployeeAdd = (firstName, lastName, currentRoleID, currentManagerID) => {
+    connection.query(
+        `INSERT INTO Employees(First_Name, Last_Name, Role_ID, Manager_ID) VALUES ('${firstName}', '${lastName}', ${currentRoleID}, ${currentManagerID})`,
+        (err, res) => {
+            if (err) {
+                console.error (err);
+            };
+            return init();
+        }
+    )
 }
 
 const removeEmployee = () => {
@@ -297,8 +396,6 @@ const removeEmployee = () => {
                 }
             }
             selectRemovedEmployee();
-            // console.log(existingEmployees);
-            // init();
         }
     )
 }
@@ -308,7 +405,188 @@ const selectRemovedEmployee = () => {
         .prompt(removedEmployeePrompt)
         .then((removedEmployeePrompt) => {
             console.log(removedEmployeePrompt.removedEmployee);
-            init();
+            let firstLast = removedEmployeePrompt.removedEmployee.split(' ');
+            connection.query(
+                `DELETE FROM Employees WHERE First_Name = '${firstLast[0]}' AND Last_Name = '${firstLast[1]}'`,
+                (err ,res) => {
+                    if (err) {
+                        console.error(err);
+                    }
+                }
+            )
+            return init();
+        }
+    )
+}
+
+const addRole = () => {
+    inquirer
+        .prompt(newRolePrompt)
+        .then((newRolePrompt) => {
+            connection.query(
+                `INSERT INTO Roles SET ?`,
+                {
+                    Title: `${newRolePrompt.newRole}`,
+                    Salary: parseInt(`${newRolePrompt.salary}`),
+                    Department_ID: parseInt(`${newRolePrompt.departmentID}`)
+                },
+                (err, res) => {
+                    if (err) {
+                        console.error(err);
+                    }
+                }
+            )
+            return init();
+        }
+    )
+}
+    
+const removeRole = () => {
+    connection.query(
+        `SELECT Title FROM Roles`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            };
+            // For Loop to Populate Existing Roles from DB
+            for (let i = 0; i < res.length; i++) {
+                if (existingRoles.includes(res[i].Title)) {
+                    continue;
+                }
+                else {
+                    existingRoles.push(res[i].Title);
+                }
+            }
+            selectRemovedRole();
+        }
+    )
+}
+
+const selectRemovedRole = () => {
+    inquirer
+        .prompt(removeRolePrompt)
+        .then((removeRolePrompt) => {
+            connection.query(
+                `DELETE FROM Roles WHERE Title = '${removeRolePrompt.removedRole}'`,
+                (err, res) => {
+                    if (err) {
+                        console.error(err);
+                    };
+                }
+            )
+            existingRoles.pop(removeRolePrompt.removedRole);
+            return init();
+        }
+    )
+}
+
+const addDepartment = () => {
+    inquirer   
+        .prompt(addDepartmentPrompt)
+        .then((addDepartmentPrompt) => {
+            connection.query(
+                `INSERT INTO Departments SET Department_Name = '${addDepartmentPrompt.addDepartment}'`,
+                (err, res) => {
+                    if (err) {
+                        console.error(err);
+                    };
+                }
+            )
+            return init();
+        }
+    )
+}
+
+const removeDepartment = () => {
+    connection.query(
+        `SELECT Department_Name FROM Departments`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            }
+            for (let i = 0; i < res.length; i++) {
+                if (existingDepartments.includes(res[i].Department_Name)) {
+                    continue;
+                }
+                else {
+                    existingDepartments.push(res[i].Department_Name);
+                }
+            }
+            selectRemovedDepartment();
+        }
+    )
+}
+
+const selectRemovedDepartment = () => {
+    inquirer
+        .prompt(removeDepartmentPrompt)
+        .then((removeDepartmentPrompt) => {
+            connection.query(
+                `DELETE FROM Departments WHERE Department_Name = '${removeDepartmentPrompt.removedDepartment}'`,
+                (err, res) => {
+                    if (err) {
+                        console.error(err);
+                    };
+                }
+            )
+            existingDepartments.pop(removeDepartmentPrompt.removedDepartment);
+            return init();
+        }
+    )
+}
+
+
+
+const updateEmployeeRole = () => {
+    connection.query(
+        `SELECT Title FROM Roles`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            }
+            // For Loop to Populate Existing Roles from DB
+            // for (let i = 0; i < res.length; i++) {
+            //     if (existingRoles.includes(res[i].Title)) {
+            //         continue;
+            //     }
+            //     else {
+            //         existingRoles.push(res[i].Title);
+            //     }
+            // }
+            inquirer
+                .prompt(updatePrompt)
+                .then((updatePrompt) => {
+                    console.log(updatePrompt.employee, updatePrompt.update);
+                    // let firstLast = removedEmployeePrompt.removedEmployee.split(' ');
+                    // connection.query(
+                    //     `UPDATE Employees WHERE First_Name = '${firstLast[0]}' AND Last_Name = '${firstLast[1]} SET ?`,
+                    //     {
+
+                    //     }
+                    // )
+
+                }
+            )
+        }
+    )
+}
+
+const updateEmployee = () => {
+    connection.query(
+        `SELECT First_Name, Last_Name FROM Employees`,
+        (err,res) => {
+            if (err) {
+                console.error(err);
+            };
+            for (let i = 0; i < res.length; i++) {
+                if (existingEmployees.includes(`${res[i].First_Name} ${res[i].Last_Name}`)) {
+                    continue;
+                }
+                else {
+                    existingEmployees.push(`${res[i].First_Name} ${res[i].Last_Name}`);
+                }
+            }
+            updateEmployeeRole();
         }
     )
 }
