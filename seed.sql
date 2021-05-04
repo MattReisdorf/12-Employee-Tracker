@@ -23,5 +23,5 @@ VALUES ('Smitty', 'Werbenjagermanjensen', 1, 1);
 
 
 -- SELECT * FROM Departments;
-SELECT * FROM Roles;
+-- SELECT * FROM Roles;
 -- SELECT * FROM Employees;
