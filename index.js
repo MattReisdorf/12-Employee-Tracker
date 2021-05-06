@@ -45,6 +45,7 @@ const initalPrompt = {
             'Remove a Department',
             `Update an Employee's Role`,
             `Update an Employee's Manager`,
+            `View Department Budgets`,
             'Exit']
 };
 
@@ -142,6 +143,20 @@ const selectManagerPrompt = {
     choices: existingManagers
 }
 
+const viewManagerPrompt = {
+    type: 'list',
+    name: 'chooseManager',
+    message: 'Select a Manager to View Their Employees',
+    choices: existingManagers
+}
+
+const budgetDepartmentPrompt = {
+    type: 'list',
+    name: 'chooseDepartment',
+    message: 'Which Department Budget do you Want to View?',
+    choices: existingDepartments
+}
+
 
                     /*
 
@@ -229,6 +244,9 @@ const switchCases = (responses) => {
         case `Update an Emplyoee's Manager`:
             console.log(`Update an Employee's Manager`);
             break;
+        case `View Department Budgets`:
+            budgetSelectDepartment();
+            break;
         case `Exit`:
             endConnection();
             break;
@@ -236,7 +254,6 @@ const switchCases = (responses) => {
 };
 
 const viewAllEmployees = () => {
-    // This probably needs a join, currently doesn't give all of the desired information
     connection.query(
         `SELECT Employees.Employee_ID, Employees.First_Name, Employees.Last_Name, Managers.First_Name AS Manager_First_Name,
         Managers.Last_Name AS Manager_Last_Name, Roles.Title AS Role, Departments.Department_Name AS Department
@@ -249,7 +266,6 @@ const viewAllEmployees = () => {
 };
 
 const viewByDepartment = () => {
-    // Also needs a join, just testing function calls and DB queries for now
     connection.query(
         `SELECT Department_Name FROM Departments`,
         (err, res) => {
@@ -296,15 +312,30 @@ const selectViewByDepartment = () => {
 const viewByManager = () => {
     // NEEDS JOIN
     connection.query(
-        `SELECT * FROM Employees WHERE ?`,
-        {
-            Manager_ID: 1 || 2
-        },
+        `SELECT First_Name. Last_Name FROM Managers`,
         (err,res) => {
-            err ? console.error(err) : console.table(res);
-        return init();
+            if (err) {
+                console.error(err);
+            }
+            for (let i = 0; i < res.length; i++) {
+                if (existingManagers.includes(`${res[i].First_Name} ${res[i].Last_Name}`)) {
+                    continue;
+                }
+                else {
+                    existingManagers.push(`${res[i].First_Name} ${res[i].Last_Name}`);
+                }
+            }
+        selectViewByManager();
         }
     )
+}
+
+const selectViewByManager = () => {
+    inquirer
+        .prompt(viewManagerPrompt)
+        .then((viewManagerPrompt) => {
+            let managerLast = viewManagerPrompt.chooseManager.split(' ')
+        })
 }
 
 const addEmployeeName = () => {
@@ -632,6 +663,53 @@ const updateEmployee = () => {
                 }
             }
             updateEmployeeRole();
+        }
+    )
+}
+
+
+const budgetSelectDepartment = () => {
+    connection.query(
+        `SELECT Department_Name FROM Departments`,
+        (err, res) => {
+            if (err) {
+                console.error(err);
+            }
+            for (let i = 0; i < res.length; i++) {
+                if (existingDepartments.includes(`${res[i].Department_Name}`)) {
+                    continue;
+                }
+                else {
+                    existingDepartments.push(`${res[i].Department_Name}`);
+                }
+            }
+        budgetByDepartment();
+        }
+    );
+};
+
+const budgetByDepartment = () => {
+    inquirer 
+        .prompt(budgetDepartmentPrompt)
+        .then((budgetDepartmentPrompt) => {
+            connection.query(
+                `SELECT SUM(Salary) AS Budget
+                FROM (
+                    SELECT Employees.Employee_ID, Employees.First_Name, Employees.Last_Name, Roles.Salary AS Salary
+                    FROM Employees
+                    LEFT JOIN Roles ON Employees.Role_ID = Roles.Role_ID
+                    JOIN Departments ON Departments.Department_ID = Roles.Department_ID AND Department_Name = '${budgetDepartmentPrompt.chooseDepartment}'
+                ) AS subquery`,
+            (err, res) => {
+                if (err) {
+                    console.error(err);
+                }
+                else {
+                    console.table(res);
+                }
+                return init();
+            }
+            )
         }
     )
 }
