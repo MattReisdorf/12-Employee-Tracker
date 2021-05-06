@@ -93,6 +93,13 @@ const removedEmployeePrompt = {
     choices: existingEmployees
 }
 
+const selectedDepartmentPrompt = {
+    type: 'list',
+    name: 'selectedDepartment',
+    message: 'Which Department Do You Want to View?',
+    choices: existingDepartments
+}
+
 const addDepartmentPrompt = {
     type: 'input',
     name: 'addDepartment',
@@ -244,13 +251,47 @@ const viewAllEmployees = () => {
 const viewByDepartment = () => {
     // Also needs a join, just testing function calls and DB queries for now
     connection.query(
-        `SELECT * FROM Departments`,
+        `SELECT Department_Name FROM Departments`,
         (err, res) => {
-            err ? console.error(err) : console.table(res);
-        return init();
+            if (err) {
+                console.error(err);
+            }
+            for (let i = 0; i < res.length; i++) {
+                if (existingDepartments.includes(`${res[i].Department_Name}`)) {
+                    continue;
+                }
+                else {
+                    existingDepartments.push(`${res[i].Department_Name}`);
+                }
+            }
+        selectViewByDepartment();
         }
     );
 };
+
+const selectViewByDepartment = () => {
+    inquirer 
+        .prompt(selectedDepartmentPrompt)
+        .then((selectedDepartmentPrompt) => {
+            connection.query(
+                `SELECT Employees.Employee_ID, Employees.First_Name, Employees.Last_Name, Managers.First_Name AS Manager_First_Name,
+                Managers.Last_Name AS Manager_Last_Name, Roles.Title AS Role, Departments.Department_Name AS Department
+                FROM Employees 
+                LEFT JOIN Managers ON Employees.Manager_ID = Managers.Manager_ID JOIN Roles ON Employees.Role_ID = Roles.Role_ID 
+                JOIN Departments ON Departments.Department_ID = Roles.Department_ID AND Department_Name = "${selectedDepartmentPrompt.selectedDepartment}"`,
+            (err, res) => {
+                if (err) {
+                    console.error(err);
+                }
+                else {
+                    console.table(res);
+                }
+                return init();
+            }
+            )
+        }
+    )
+}
 
 const viewByManager = () => {
     // NEEDS JOIN
