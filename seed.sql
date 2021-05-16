@@ -20,7 +20,3 @@ VALUES ('Droney', 'McDroneface', 2);
 
 INSERT INTO Employees(First_Name, Last_Name, Role_ID, Manager_ID)
 VALUES ('Smitty', 'Werbenjagermanjensen', 1, 1);
-
--- SELECT * FROM Departments;
--- SELECT * FROM Employees;
--- SELECT * FROM Roles;
